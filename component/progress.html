@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chili Pepper Growth Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .progress-container {
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .progress-bar {
+            width: 0%;
+            height: 30px;
+            background-color: #4CAF50;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        .task {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .task.completed {
+            background-color: #e6f3e6;
+            text-decoration: line-through;
+        }
+        .btn {
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .btn-reset {
+            background-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pertumbuhan Cabai</h1>
+        
+        <div class="progress-container">
+            <div id="progressBar" class="progress-bar"></div>
+        </div>
+        
+        <div id="dayInfo">
+            <h2>Hari <span id="currentDay">1</span> dari 70</h2>
+        </div>
+        
+        <div id="taskList"></div>
+        
+        <div>
+            <button id="nextDayBtn" class="btn">Next Day</button>
+            <button id="resetBtn" class="btn btn-reset">Mulai Ulang</button>
+            <button id="saveProgressBtn" class="btn">Simpan Progress</button>
+            <input type="file" id="uploadProgressInput" accept=".json" style="display:none;">
+            <button id="uploadProgressBtn" class="btn">Masukan Progress</button>
+        </div>
+    </div>
+
+    <script>
+        // Predefined tasks for chili pepper growth
+        const CHILI_PEPPER_TASKS = [
+            { day: 1, task: 'Tanam Biji Cabai Ke Pot' },
+            { day: 1, task: 'Siram Tanaman Dalam Pot' },
+            { day: 2, task: 'Siram Tanaman Dalam Pot' },
+            { day: 3, task: 'Siram Tanaman Dalam Pot' },
+            { day: 4, task: 'Siram Tanaman Dalam Pot' },
+            { day: 5, task: 'Siram Tanaman Dalam Pot' },
+            { day: 6, task: 'Siram Tanaman Dalam Pot' },
+            { day: 7, task: 'Siram Tanaman Dalam Pot' },
+            { day: 7, task: 'Pindahkan ke pot yang lebih besar' },
+            { day: 14, task: 'Thin out seedlings' },
+            { day: 21, task: 'Transplant to larger container' },
+            { day: 30, task: 'Start fertilizing' },
+            { day: 45, task: 'Check for pests' },
+            { day: 60, task: 'Prepare for harvesting' },
+            { day: 70, task: 'Harvest chili peppers' }
+        ];
+
+        // DOM Elements
+        const progressBar = document.getElementById('progressBar');
+        const currentDaySpan = document.getElementById('currentDay');
+        const taskList = document.getElementById('taskList');
+        const nextDayBtn = document.getElementById('nextDayBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // Application State
+        let currentDay = 1;
+        let completedTasks = [];
+
+        // Function to save progress to local storage
+        function saveProgress() {
+            const progressData = {
+                currentDay,
+                completedTasks
+            };
+            localStorage.setItem('chiliPepperProgress', JSON.stringify(progressData));
+        }
+
+        // Function to load progress from local storage
+        function loadProgress() {
+            const savedProgress = localStorage.getItem('chiliPepperProgress');
+            if (savedProgress) {
+                const parsedProgress = JSON.parse(savedProgress);
+                currentDay = parsedProgress.currentDay;
+                completedTasks = parsedProgress.completedTasks || [];
+                updateTracker();
+            }
+        }
+
+        // Function to update tracker display
+        function updateTracker() {
+            // Update day and progress bar
+            currentDaySpan.textContent = currentDay;
+            const progressPercentage = (currentDay / 70) * 100;
+            progressBar.style.width = `${progressPercentage}%`;
+
+            // Clear and repopulate task list
+            taskList.innerHTML = '';
+            
+            // Find tasks for current day
+            const dayTasks = CHILI_PEPPER_TASKS.filter(task => task.day === currentDay);
+            
+            dayTasks.forEach(task => {
+                const taskElement = document.createElement('div');
+                taskElement.classList.add('task');
+                
+                if (completedTasks.includes(task.task)) {
+                    taskElement.classList.add('completed');
+                }
+                
+                taskElement.innerHTML = `
+                    <span>${task.task}</span>
+                    ${!completedTasks.includes(task.task) ? 
+                        `<button class="btn complete-task" data-task="${task.task}">Selesai</button>` : 
+                        ''
+                    }
+                `;
+                
+                taskList.appendChild(taskElement);
+            });
+
+            // Add event listeners to new complete task buttons
+            document.querySelectorAll('.complete-task').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const taskText = e.target.getAttribute('data-task');
+                    if (!completedTasks.includes(taskText)) {
+                        completedTasks.push(taskText);
+                        updateTracker();
+                        saveProgress();
+                    }
+                });
+            });
+
+            // Save progress after each update
+            saveProgress();
+        }
+
+        // Next Day Button
+        nextDayBtn.addEventListener('click', () => {
+            if (currentDay < 70) {
+                currentDay++;
+                updateTracker();
+            }
+        });
+
+        // Reset Button
+        resetBtn.addEventListener('click', () => {
+            currentDay = 1;
+            completedTasks = [];
+            updateTracker();
+        });
+
+        // Load saved progress when page loads
+        loadProgress();
+
+        // Initial tracker update
+        updateTracker();
+
+        function saveProgressToFile() {
+            const progressData = {
+                currentDay,
+                completedTasks
+            };
+            
+            const blob = new Blob([JSON.stringify(progressData, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'chili_pepper_progress.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Function to load progress from a file
+        function loadProgressFromFile(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const parsedProgress = JSON.parse(e.target.result);
+                        currentDay = parsedProgress.currentDay;
+                        completedTasks = parsedProgress.completedTasks || [];
+                        updateTracker();
+                    } catch (error) {
+                        alert('Error loading progress file');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // Save Progress Button
+        document.getElementById('saveProgressBtn').addEventListener('click', saveProgressToFile);
+
+        // Upload Progress Button and Input
+        const uploadProgressInput = document.getElementById('uploadProgressInput');
+        const uploadProgressBtn = document.getElementById('uploadProgressBtn');
+        
+        uploadProgressBtn.addEventListener('click', () => {
+            uploadProgressInput.click();
+        });
+
+        uploadProgressInput.addEventListener('change', loadProgressFromFile);
+
+    </script>
+</body>
+</html>
